@@ -1,2 +1,12 @@
+微软TstCon用来加载ActiveX控件的一个容器，默认仅支持VBScript和JavaScript，其源码在VS2010安装目录下Samples文件夹内，至于为什么要修改使其支持Python脚本呢，原因主要有2点：
+    
+一是是由于本人手头上的项目脚本是VBScript写的，遇到一个问题，就是当控件代码中有一个传递指针的事件函数，客户端需要响应该事件，并修改那个指针变量返回给控件，控件根据这个指针变量值得不同来实现不同的逻辑，大家都知道，TstCon和脚本是来测试控件的，但是在脚本代码中，修改该指针变量后(VBScript通过ByRef来传递该参数)并不能返回到控件中，所以该事件功能并不能通过TstCon+VBScript来实现(加载ocx的最终客户端当然可以实现，不具备通用性，本文的重点是TstCon+脚本)
+
+二是Python语言的强大性碾压了VBScript，采用Python后可以很方便的编写测试代码，方便管理
+      
+如何做：其实很简单，主要是修改容器的LoadScript函数，加载Python脚本引擎（windows要安装PythonWin且要和Python的版本一致，我采用的是python3.4），唯一遇到的问题是 hResult = m_pDispatch->GetTypeInfo( 0, GetUserDefaultLCID(), &pTypeInfo );pTypeInfo无法获取，查阅资料得知，是因为无法获取类型库信息，这个pTypeInfo得不到，就得不到脚本中的函数和dispod的对应关系，当然资料上的说法是需要自己写一个idl文件然后用MIDL编译为tlb文件然后自己生成typelib,这样做太麻烦了，除了写脚本还要写IDL文件，当然我是拒绝的，万幸的是，GetIDsOfNames可以根据脚本中的函数名得到dispatchId,懂得com编程的都知道，只要有了函数名和dispatchId只要调用Invoke函数就能执行，那么只要自己解析脚本，得到其中的函数名，然后就到了对应关系，进而可以填充CScript类的m_mapMacros，经验证，问题1完美解决，因为Python可以返回值，目前为止，大功告成！
+    
+遗留的问题：`既然GetIDsOfNames可以根据脚本中的函数名得到dispatchId，为何pTypeInfo这个指针无法获得？？因为后边m_mapMacros也是通过pTypeInfo来填充dispID和函数名的`
+
 
 
